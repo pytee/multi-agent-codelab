@@ -63,6 +63,9 @@
     p code, li code { background: var(--code-bg); border: 1px solid var(--border); border-radius: 4px; padding: 1px 5px; font-size: .86em; color: #f0883e; }
     .kw { color: #ff7b72; } .str { color: #a5d6ff; } .cm { color: #8b949e; font-style: italic; }
     .fn { color: #d2a8ff; } .cls { color: #ffa657; } .num { color: #79c0ff; }
+    .copy-btn { position: absolute; top: 8px; right: 8px; background: var(--surface2); border: 1px solid var(--border); color: var(--muted); border-radius: 5px; padding: 3px 10px; font-size: 11px; cursor: pointer; font-family: sans-serif; transition: all .15s; }
+    .copy-btn:hover { background: var(--surface); color: var(--text); border-color: var(--accent); }
+    .copy-btn.ok { color: var(--accent2); border-color: var(--accent2); }
 
     /* Callout */
     .callout { border-radius: 9px; padding: 14px 18px; margin: 18px 0; display: flex; gap: 11px; font-size: 14px; }
@@ -225,22 +228,22 @@
       <pre data-lang="bash"><code><span class="fn">gcloud</span> services enable \
   aiplatform.googleapis.com \
   run.googleapis.com \
-  cloudbuild.googleapis.com</code></pre>
+  cloudbuild.googleapis.com</code><button class="copy-btn" onclick="copyCode(this)">Copy</button></pre>
       <h2>3. Clone the Repository</h2>
       <pre data-lang="bash"><code><span class="fn">git</span> clone https://github.com/GoogleCloudPlatform/agent-developer-kit-samples
-<span class="fn">cd</span> agent-developer-kit-samples/multi-agent-course-creator</code></pre>
+<span class="fn">cd</span> agent-developer-kit-samples/multi-agent-course-creator</code><button class="copy-btn" onclick="copyCode(this)">Copy</button></pre>
       <h2>4. Install Dependencies</h2>
       <pre data-lang="bash"><code><span class="cm"># Install uv if you haven't already</span>
 <span class="fn">pip</span> install uv
 
 <span class="cm"># Install project dependencies</span>
-<span class="fn">uv</span> sync</code></pre>
+<span class="fn">uv</span> sync</code><button class="copy-btn" onclick="copyCode(this)">Copy</button></pre>
       <h2>5. Configure Environment Variables</h2>
       <pre data-lang="bash"><code><span class="kw">cat</span> &gt; .env &lt;&lt; EOF
 GOOGLE_CLOUD_PROJECT=your-project-id
 GOOGLE_GENAI_USE_VERTEXAI=true
 GOOGLE_CLOUD_LOCATION=us-central1
-EOF</code></pre>
+EOF</code><button class="copy-btn" onclick="copyCode(this)">Copy</button></pre>
       <div class="callout warning"><span class="ci">&#9888;</span><div>Replace <code>your-project-id</code> with your actual Google Cloud project ID. Run <code>gcloud config get project</code> to find it.</div></div>
     </div>
     <div class="step-foot">
@@ -278,7 +281,7 @@ researcher_agent = <span class="cls">Agent</span>(
     model=<span class="cls">MODEL</span>,
     instruction=<span class="cls">RESEARCHER_PROMPT</span>,
     tools=[google_search],
-)</code></pre>
+)</code><button class="copy-btn" onclick="copyCode(this)">Copy</button></pre>
       <div class="callout tip"><span class="ci">&#128302;</span><div><strong>Design principle:</strong> The agent has exactly one tool (<code>google_search</code>) and one clear purpose. This makes it predictable, testable, and replaceable.</div></div>
       <h2>How It Works</h2>
       <ul>
@@ -324,7 +327,7 @@ judge_agent = <span class="cls">Agent</span>(
     instruction=<span class="cls">JUDGE_PROMPT</span>,
     output_schema=<span class="cls">JudgeOutput</span>,
     disallow_transfer_to_parent=<span class="kw">True</span>,
-)</code></pre>
+)</code><button class="copy-btn" onclick="copyCode(this)">Copy</button></pre>
       <div class="callout info"><span class="ci">&#128161;</span><div><strong><code>disallow_transfer_to_parent=True</code></strong> prevents the Judge from delegating back to the orchestrator mid-evaluation, ensuring it completes its task independently.</div></div>
       <h2>Why Structured Output?</h2>
       <ul>
@@ -353,12 +356,12 @@ judge_agent = <span class="cls">Agent</span>(
       <pre data-lang="bash"><code><span class="cm"># Start an interactive session with the researcher agent</span>
 <span class="fn">adk</span> run researcher
 
-<span class="cm"># Try: "Research the topic: Introduction to Kubernetes"</span></code></pre>
+<span class="cm"># Try: "Research the topic: Introduction to Kubernetes"</span></code><button class="copy-btn" onclick="copyCode(this)">Copy</button></pre>
       <h2>Running the Judge</h2>
       <pre data-lang="bash"><code><span class="fn">adk</span> run judge
 
 <span class="cm"># Paste in research content and verify JSON output</span>
-<span class="cm"># Expected: {"status": "pass"/"fail", "feedback": "..."}</span></code></pre>
+<span class="cm"># Expected: {"status": "pass"/"fail", "feedback": "..."}</span></code><button class="copy-btn" onclick="copyCode(this)">Copy</button></pre>
       <div class="callout success"><span class="ci">&#9989;</span><div><strong>Best practice:</strong> Always test agents in isolation before composing them. This makes it much easier to identify which agent is responsible for unexpected behavior.</div></div>
       <h2>What to Verify</h2>
       <ul>
@@ -396,7 +399,7 @@ builder_agent = <span class="cls">Agent</span>(
     name=<span class="str">"content_builder"</span>,
     model=<span class="str">"gemini-2.0-flash"</span>,
     instruction=<span class="cls">BUILDER_PROMPT</span>,
-)</code></pre>
+)</code><button class="copy-btn" onclick="copyCode(this)">Copy</button></pre>
       <div class="callout tip"><span class="ci">&#128302;</span><div>Notice the Content Builder has <strong>no tools</strong> — it only needs its knowledge and the research passed to it. Simpler agents are more predictable.</div></div>
     </div>
     <div class="step-foot">
@@ -433,7 +436,7 @@ judge = <span class="cls">RemoteA2aAgent</span>(
 content_builder = <span class="cls">RemoteA2aAgent</span>(
     name=<span class="str">"content_builder"</span>,
     agent_card_url=os.getenv(<span class="str">"BUILDER_AGENT_CARD_URL"</span>),
-)</code></pre>
+)</code><button class="copy-btn" onclick="copyCode(this)">Copy</button></pre>
       <h2>The A2A Protocol</h2>
       <p>Each agent exposes an <strong>agent card</strong> — a JSON endpoint describing its capabilities. <code>RemoteA2aAgent</code> reads this card to discover how to communicate with the service.</p>
       <div class="callout info"><span class="ci">&#128161;</span><div>This is the same pattern as microservices: each agent is independently deployable, scalable, and replaceable. The orchestrator only needs the URL.</div></div>
@@ -479,7 +482,7 @@ content_builder = <span class="cls">RemoteA2aAgent</span>(
         <span class="kw">except</span> json.JSONDecodeError:
             <span class="kw">yield</span> <span class="cls">Event</span>(author=self.name, content=<span class="str">"Parse error."</span>)
 
-escalation_checker = <span class="cls">EscalationChecker</span>(name=<span class="str">"escalation_checker"</span>)</code></pre>
+escalation_checker = <span class="cls">EscalationChecker</span>(name=<span class="str">"escalation_checker"</span>)</code><button class="copy-btn" onclick="copyCode(this)">Copy</button></pre>
       <div class="callout tip"><span class="ci">&#128302;</span><div>Not every "agent" needs an LLM! For deterministic logic like parsing JSON, a custom <code>BaseAgent</code> is faster, cheaper, and more reliable than using a model.</div></div>
     </div>
     <div class="step-foot">
@@ -508,7 +511,7 @@ research_loop = <span class="cls">LoopAgent</span>(
         escalation_checker,  <span class="cm"># 3. Check if we should stop</span>
     ],
     max_iterations=<span class="num">5</span>,  <span class="cm"># Safety limit</span>
-)</code></pre>
+)</code><button class="copy-btn" onclick="copyCode(this)">Copy</button></pre>
       <h2>How the Loop Works</h2>
       <ol>
         <li>Researcher searches and returns research content</li>
@@ -549,14 +552,14 @@ course_pipeline = <span class="cls">SequentialAgent</span>(
 )
 
 <span class="cm"># Root agent exposed by the Orchestrator service</span>
-root_agent = course_pipeline</code></pre>
+root_agent = course_pipeline</code><button class="copy-btn" onclick="copyCode(this)">Copy</button></pre>
       <h2>Agent Hierarchy</h2>
       <pre><code>SequentialAgent (course_pipeline)
 ├── LoopAgent (research_loop)         [runs until pass]
 │   ├── RemoteA2aAgent (researcher)   → port 8001
 │   ├── RemoteA2aAgent (judge)        → port 8002
 │   └── EscalationChecker
-└── RemoteA2aAgent (content_builder)  → port 8003</code></pre>
+└── RemoteA2aAgent (content_builder)  → port 8003</code><button class="copy-btn" onclick="copyCode(this)">Copy</button></pre>
       <div class="callout success"><span class="ci">&#9989;</span><div>The entire complex multi-agent pipeline is composed from simple, readable Python. Each agent is independently testable and the composition is declarative.</div></div>
     </div>
     <div class="step-foot">
@@ -576,7 +579,7 @@ root_agent = course_pipeline</code></pre>
       <p>The <code>run_local.sh</code> script starts all four agents as separate uvicorn processes, simulating the distributed production deployment on your local machine.</p>
       <h2>Starting All Services</h2>
       <pre data-lang="bash"><code><span class="fn">chmod</span> +x run_local.sh
-<span class="fn">./run_local.sh</span></code></pre>
+<span class="fn">./run_local.sh</span></code><button class="copy-btn" onclick="copyCode(this)">Copy</button></pre>
       <table>
         <thead><tr><th>Agent</th><th>Port</th><th>Command</th></tr></thead>
         <tbody>
@@ -589,7 +592,7 @@ root_agent = course_pipeline</code></pre>
       <h2>Testing the Full Pipeline</h2>
       <pre data-lang="bash"><code><span class="fn">curl</span> -X POST http://localhost:8004/run \
   -H <span class="str">"Content-Type: application/json"</span> \
-  -d <span class="str">'{"message": "Create a course on Introduction to Kubernetes"}'</span></code></pre>
+  -d <span class="str">'{"message": "Create a course on Introduction to Kubernetes"}'</span></code><button class="copy-btn" onclick="copyCode(this)">Copy</button></pre>
       <div class="callout info"><span class="ci">&#128161;</span><div>Watch the terminal output to see each agent executing in sequence. The loop may run 2–3 times before the Judge passes the research.</div></div>
     </div>
     <div class="step-foot">
@@ -617,7 +620,7 @@ root_agent = course_pipeline</code></pre>
 <span class="fn">gcloud</span> run deploy content-builder \
   --source builder/ --region us-central1 --allow-unauthenticated &amp;
 
-<span class="fn">wait</span>  <span class="cm"># Wait for all three to complete</span></code></pre>
+<span class="fn">wait</span>  <span class="cm"># Wait for all three to complete</span></code><button class="copy-btn" onclick="copyCode(this)">Copy</button></pre>
       <h2>Step 2: Capture Service URLs</h2>
       <pre data-lang="bash"><code>RESEARCHER_URL=$(<span class="fn">gcloud</span> run services describe researcher \
   --region us-central1 --format <span class="str">'value(status.url)'</span>)
@@ -626,7 +629,7 @@ JUDGE_URL=$(<span class="fn">gcloud</span> run services describe judge \
   --region us-central1 --format <span class="str">'value(status.url)'</span>)
 
 BUILDER_URL=$(<span class="fn">gcloud</span> run services describe content-builder \
-  --region us-central1 --format <span class="str">'value(status.url)'</span>)</code></pre>
+  --region us-central1 --format <span class="str">'value(status.url)'</span>)</code><button class="copy-btn" onclick="copyCode(this)">Copy</button></pre>
       <h2>Step 3: Deploy Orchestrator</h2>
       <pre data-lang="bash"><code><span class="fn">gcloud</span> run deploy orchestrator \
   --source orchestrator/ \
@@ -634,7 +637,7 @@ BUILDER_URL=$(<span class="fn">gcloud</span> run services describe content-build
   --allow-unauthenticated \
   --set-env-vars <span class="str">"RESEARCHER_AGENT_CARD_URL=${RESEARCHER_URL}/agent-card"</span> \
   --set-env-vars <span class="str">"JUDGE_AGENT_CARD_URL=${JUDGE_URL}/agent-card"</span> \
-  --set-env-vars <span class="str">"BUILDER_AGENT_CARD_URL=${BUILDER_URL}/agent-card"</span></code></pre>
+  --set-env-vars <span class="str">"BUILDER_AGENT_CARD_URL=${BUILDER_URL}/agent-card"</span></code><button class="copy-btn" onclick="copyCode(this)">Copy</button></pre>
       <div class="callout warning"><span class="ci">&#9888;</span><div>For production, remove <code>--allow-unauthenticated</code> and configure IAM service accounts for inter-service authentication.</div></div>
     </div>
     <div class="step-foot">
@@ -704,6 +707,17 @@ function show(n) {
   document.getElementById('pginfo').textContent = 'Step ' + (n + 1) + ' of ' + total;
   document.getElementById('prog').style.width = (((n + 1) / total) * 100) + '%';
   window.scrollTo({top: 0, behavior: 'smooth'});
+}
+
+function copyCode(btn) {
+  var pre = btn.parentElement;
+  var code = pre.querySelector('code') || pre;
+  var text = code.innerText;
+  navigator.clipboard.writeText(text).then(function() {
+    btn.textContent = 'Copied!';
+    btn.classList.add('ok');
+    setTimeout(function() { btn.textContent = 'Copy'; btn.classList.remove('ok'); }, 2000);
+  });
 }
 </script>
 </body>
