@@ -244,25 +244,26 @@
       <p>Open <a href="https://shell.cloud.google.com" target="_blank">Google Cloud Shell</a> and ensure the correct project is selected.</p>
       <h2>2. Enable Required APIs</h2>
       <pre data-lang="bash"><code><span class="fn">gcloud</span> services enable \
-  aiplatform.googleapis.com \
-  run.googleapis.com \
-  cloudbuild.googleapis.com</code><button class="copy-btn" onclick="copyCode(this)">Copy</button></pre>
-      <h2>3. Clone the Repository</h2>
-      <pre data-lang="bash"><code><span class="fn">git</span> clone https://github.com/GoogleCloudPlatform/agent-developer-kit-samples
-<span class="fn">cd</span> agent-developer-kit-samples/multi-agent-course-creator</code><button class="copy-btn" onclick="copyCode(this)">Copy</button></pre>
+    run.googleapis.com \
+    artifactregistry.googleapis.com \
+    cloudbuild.googleapis.com \
+    aiplatform.googleapis.com \
+    compute.googleapis.com</code><button class="copy-btn" onclick="copyCode(this)">Copy</button></pre>
+      <h2>3. Clone the Starter Repository</h2>
+      <pre data-lang="bash"><code><span class="fn">cd</span> ~
+<span class="fn">git</span> clone --depth 1 --filter=blob:none --sparse https://github.com/GoogleCloudPlatform/devrel-demos.git temp-repo &amp;&amp; <span class="fn">cd</span> temp-repo &amp;&amp; <span class="fn">git</span> sparse-checkout set agents/build-with-ai/production-ready-ai/prai-roadshow-lab-1-starter &amp;&amp; <span class="fn">cd</span> .. &amp;&amp; <span class="fn">mv</span> temp-repo/agents/build-with-ai/production-ready-ai/prai-roadshow-lab-1-starter . &amp;&amp; <span class="fn">rm</span> -rf temp-repo
+<span class="fn">cd</span> prai-roadshow-lab-1-starter</code><button class="copy-btn" onclick="copyCode(this)">Copy</button></pre>
       <h2>4. Install Dependencies</h2>
-      <pre data-lang="bash"><code><span class="cm"># Install uv if you haven't already</span>
-<span class="fn">pip</span> install uv
-
-<span class="cm"># Install project dependencies</span>
-<span class="fn">uv</span> sync</code><button class="copy-btn" onclick="copyCode(this)">Copy</button></pre>
+      <pre data-lang="bash"><code><span class="fn">uv</span> sync</code><button class="copy-btn" onclick="copyCode(this)">Copy</button></pre>
       <h2>5. Configure Environment Variables</h2>
-      <pre data-lang="bash"><code><span class="kw">cat</span> &gt; .env &lt;&lt; EOF
-GOOGLE_CLOUD_PROJECT=your-project-id
-GOOGLE_GENAI_USE_VERTEXAI=true
-GOOGLE_CLOUD_LOCATION=us-central1
+      <pre data-lang="bash"><code><span class="kw">cat</span> &lt;&lt;EOF &gt; .env
+<span class="kw">export</span> GOOGLE_CLOUD_PROJECT=$(gcloud config get-value project)
+<span class="kw">export</span> GOOGLE_CLOUD_LOCATION=us-west1
+<span class="kw">export</span> GOOGLE_GENAI_USE_VERTEXAI=true
 EOF</code><button class="copy-btn" onclick="copyCode(this)">Copy</button></pre>
-      <div class="callout warning"><span class="ci">&#9888;</span><div>Replace <code>your-project-id</code> with your actual Google Cloud project ID. Run <code>gcloud config get project</code> to find it.</div></div>
+      <h2>6. Load Environment Variables</h2>
+      <pre data-lang="bash"><code><span class="kw">source</span> .env</code><button class="copy-btn" onclick="copyCode(this)">Copy</button></pre>
+      <div class="callout warning"><span class="ci">&#9888;</span><div>If <code>gcloud config get-value project</code> returns empty, set your project first with <code>gcloud config set project YOUR_PROJECT_ID</code>.</div></div>
     </div>
     <div class="step-foot">
       <a class="nbtn" href="#" onclick="show(0);return false;">&larr; Previous</a>
@@ -280,26 +281,28 @@ EOF</code><button class="copy-btn" onclick="copyCode(this)">Copy</button></pre>
     <div class="content">
       <p>The Researcher agent's sole job is to search the web and compile information about a topic. By keeping it focused, it becomes easy to test and improve independently.</p>
       <h2>Creating the Agent</h2>
-      <p>Create <code>researcher/agent.py</code>:</p>
+      <p>Open <code>agents/researcher/agent.py</code>. The starter file already has the imports and <code>MODEL</code> constant — add the agent definition below the TODO comment:</p>
       <pre data-lang="python"><code><span class="kw">from</span> google.adk.agents <span class="kw">import</span> Agent
-<span class="kw">from</span> google.adk.tools <span class="kw">import</span> google_search
+<span class="kw">from</span> google.adk.tools.google_search_tool <span class="kw">import</span> google_search
 
-<span class="cls">MODEL</span> = <span class="str">"gemini-2.0-flash"</span>
 
-<span class="cls">RESEARCHER_PROMPT</span> = <span class="str">"""
-You are an expert researcher. Search the web and compile
-comprehensive, accurate information about the given topic.
+<span class="cls">MODEL</span> = <span class="str">"gemini-2.5-pro"</span>
 
-Focus on: core concepts, key techniques, real-world examples,
-and recent developments. Return well-organized, factual content.
-"""</span>
-
-researcher_agent = <span class="cls">Agent</span>(
+<span class="cm"># Define the Researcher Agent</span>
+researcher = <span class="cls">Agent</span>(
     name=<span class="str">"researcher"</span>,
     model=<span class="cls">MODEL</span>,
-    instruction=<span class="cls">RESEARCHER_PROMPT</span>,
+    description=<span class="str">"Gathers information on a topic using Google Search."</span>,
+    instruction=<span class="str">"""
+    You are an expert researcher. Your goal is to find comprehensive and accurate information on the user's topic.
+    Use the `google_search` tool to find relevant information.
+    Summarize your findings clearly.
+    If you receive feedback that your research is insufficient, use the feedback to refine your next search.
+    """</span>,
     tools=[google_search],
-)</code><button class="copy-btn" onclick="copyCode(this)">Copy</button></pre>
+)
+
+root_agent = researcher</code><button class="copy-btn" onclick="copyCode(this)">Copy</button></pre>
       <div class="callout tip"><span class="ci">&#128302;</span><div><strong>Design principle:</strong> The agent has exactly one tool (<code>google_search</code>) and one clear purpose. This makes it predictable, testable, and replaceable.</div></div>
       <h2>How It Works</h2>
       <ul>
@@ -323,30 +326,45 @@ researcher_agent = <span class="cls">Agent</span>(
     </div>
     <div class="content">
       <p>The Judge evaluates whether the research meets quality standards. It uses a <strong>structured output schema</strong> to enforce consistent pass/fail decisions.</p>
-      <h2>Defining the Output Schema</h2>
-      <pre data-lang="python"><code><span class="kw">from</span> pydantic <span class="kw">import</span> BaseModel
-<span class="kw">from</span> typing <span class="kw">import</span> Literal
+      <h2>Defining the Schema and Agent</h2>
+      <p>Open <code>agents/judge/agent.py</code> and add the schema and agent definition below the TODOs:</p>
+      <pre data-lang="python"><code><span class="kw">from</span> typing <span class="kw">import</span> Literal
 <span class="kw">from</span> google.adk.agents <span class="kw">import</span> Agent
+<span class="kw">from</span> google.adk.apps.app <span class="kw">import</span> App
+<span class="kw">from</span> pydantic <span class="kw">import</span> BaseModel, Field
 
-<span class="kw">class</span> <span class="cls">JudgeOutput</span>(<span class="cls">BaseModel</span>):
-    status: <span class="cls">Literal</span>[<span class="str">"pass"</span>, <span class="str">"fail"</span>]
-    feedback: str  <span class="cm"># Detailed assessment</span>
 
-<span class="cls">JUDGE_PROMPT</span> = <span class="str">"""
-You are a strict quality evaluator for educational content.
-Evaluate whether the research covers the topic comprehensively,
-is accurate and up-to-date, has sufficient depth, and includes
-concrete examples. Return "pass" only if ALL criteria are met.
-"""</span>
+<span class="cls">MODEL</span> = <span class="str">"gemini-2.5-pro"</span>
 
-judge_agent = <span class="cls">Agent</span>(
+<span class="cm"># 1. Define the Schema</span>
+<span class="kw">class</span> <span class="cls">JudgeFeedback</span>(<span class="cls">BaseModel</span>):
+    <span class="str">"""Structured feedback from the Judge agent."""</span>
+    status: <span class="cls">Literal</span>[<span class="str">"pass"</span>, <span class="str">"fail"</span>] = <span class="fn">Field</span>(
+        description=<span class="str">"Whether the research is sufficient ('pass') or needs more work ('fail')."</span>
+    )
+    feedback: str = <span class="fn">Field</span>(
+        description=<span class="str">"Detailed feedback on what is missing. If 'pass', a brief confirmation."</span>
+    )
+
+<span class="cm"># 2. Define the Agent</span>
+judge = <span class="cls">Agent</span>(
     name=<span class="str">"judge"</span>,
-    model=<span class="str">"gemini-2.0-flash"</span>,
-    instruction=<span class="cls">JUDGE_PROMPT</span>,
-    output_schema=<span class="cls">JudgeOutput</span>,
+    model=<span class="cls">MODEL</span>,
+    description=<span class="str">"Evaluates research findings for completeness and accuracy."</span>,
+    instruction=<span class="str">"""
+    You are a strict editor.
+    Evaluate the 'research_findings' against the user's original request.
+    If the findings are missing key info, return status='fail'.
+    If they are comprehensive, return status='pass'.
+    """</span>,
+    output_schema=<span class="cls">JudgeFeedback</span>,
+    <span class="cm"># Disallow delegation because it should only output the schema</span>
     disallow_transfer_to_parent=<span class="kw">True</span>,
-)</code><button class="copy-btn" onclick="copyCode(this)">Copy</button></pre>
-      <div class="callout info"><span class="ci">&#128161;</span><div><strong><code>disallow_transfer_to_parent=True</code></strong> prevents the Judge from delegating back to the orchestrator mid-evaluation, ensuring it completes its task independently.</div></div>
+    disallow_transfer_to_peers=<span class="kw">True</span>,
+)
+
+root_agent = judge</code><button class="copy-btn" onclick="copyCode(this)">Copy</button></pre>
+      <div class="callout info"><span class="ci">&#128161;</span><div><strong><code>disallow_transfer_to_parent</code></strong> and <strong><code>disallow_transfer_to_peers</code></strong> prevent the Judge from delegating, ensuring it only emits the <code>JudgeFeedback</code> schema.</div></div>
       <h2>Why Structured Output?</h2>
       <ul>
         <li>Forces the LLM to return valid JSON matching the schema</li>
@@ -372,11 +390,11 @@ judge_agent = <span class="cls">Agent</span>(
       <p>Before connecting agents together, validate each one independently. The ADK provides <code>adk run</code> for interactive testing.</p>
       <h2>Running the Researcher</h2>
       <pre data-lang="bash"><code><span class="cm"># Start an interactive session with the researcher agent</span>
-<span class="fn">adk</span> run researcher
+<span class="fn">uv</span> run adk run agents/researcher
 
 <span class="cm"># Try: "Research the topic: Introduction to Kubernetes"</span></code><button class="copy-btn" onclick="copyCode(this)">Copy</button></pre>
       <h2>Running the Judge</h2>
-      <pre data-lang="bash"><code><span class="fn">adk</span> run judge
+      <pre data-lang="bash"><code><span class="fn">uv</span> run adk run agents/judge
 
 <span class="cm"># Paste in research content and verify JSON output</span>
 <span class="cm"># Expected: {"status": "pass"/"fail", "feedback": "..."}</span></code><button class="copy-btn" onclick="copyCode(this)">Copy</button></pre>
@@ -404,20 +422,30 @@ judge_agent = <span class="cls">Agent</span>(
     <div class="content">
       <p>The Content Builder transforms approved research into a well-structured, engaging course. It only runs after the Judge gives a "pass."</p>
       <h2>Creating the Agent</h2>
+      <p>Open <code>agents/content_builder/agent.py</code> and add the agent definition:</p>
       <pre data-lang="python"><code><span class="kw">from</span> google.adk.agents <span class="kw">import</span> Agent
 
-<span class="cls">BUILDER_PROMPT</span> = <span class="str">"""
-You are an expert instructional designer. Given approved research,
-create a comprehensive course with clear learning objectives,
-modular structure, hands-on exercises, and a summary.
-Use markdown formatting throughout. Be specific and practical.
-"""</span>
 
-builder_agent = <span class="cls">Agent</span>(
+<span class="cls">MODEL</span> = <span class="str">"gemini-2.5-pro"</span>
+
+content_builder = <span class="cls">Agent</span>(
     name=<span class="str">"content_builder"</span>,
-    model=<span class="str">"gemini-2.0-flash"</span>,
-    instruction=<span class="cls">BUILDER_PROMPT</span>,
-)</code><button class="copy-btn" onclick="copyCode(this)">Copy</button></pre>
+    model=<span class="cls">MODEL</span>,
+    description=<span class="str">"Transforms research findings into a structured course."</span>,
+    instruction=<span class="str">"""
+    You are an expert course creator.
+    Take the approved 'research_findings' and transform them into a well-structured, engaging course module.
+
+    **Formatting Rules:**
+    1. Start with a main title using a single `#` (H1).
+    2. Use `##` (H2) for main section headings.
+    3. Use bullet points and clear paragraphs.
+    4. Maintain a professional but engaging tone.
+
+    Ensure the content directly addresses the user's original request.
+    """</span>,
+)
+root_agent = content_builder</code><button class="copy-btn" onclick="copyCode(this)">Copy</button></pre>
       <div class="callout tip"><span class="ci">&#128302;</span><div>Notice the Content Builder has <strong>no tools</strong> — it only needs its knowledge and the research passed to it. Simpler agents are more predictable.</div></div>
     </div>
     <div class="step-foot">
@@ -436,24 +464,38 @@ builder_agent = <span class="cls">Agent</span>(
     <div class="content">
       <p>The Orchestrator coordinates the other agents over HTTP using the <strong>Agent-to-Agent (A2A)</strong> protocol. Each sub-agent runs as an independent microservice.</p>
       <h2>Connecting to Remote Agents</h2>
-      <pre data-lang="python"><code><span class="kw">import</span> os
-<span class="kw">from</span> google.adk.agents <span class="kw">import</span> Agent
-<span class="kw">from</span> google.adk.agents.remote_a2a_agent <span class="kw">import</span> RemoteA2aAgent
+      <p>Open <code>agents/orchestrator/agent.py</code>. The starter file already imports <code>BaseAgent</code>, <code>LoopAgent</code>, <code>SequentialAgent</code>, <code>RemoteA2aAgent</code>, <code>Event</code>, <code>EventActions</code>, <code>InvocationContext</code>, <code>CallbackContext</code>, and <code>create_authenticated_client</code>, and defines the <code>create_save_output_callback</code> helper. Replace the remote-agent TODO with:</p>
+      <pre data-lang="python"><code><span class="cm"># --- Remote Agents ---</span>
 
-<span class="cm"># Connect to sub-agents via their HTTP endpoints</span>
+<span class="cm"># Connect to the Researcher (Localhost port 8001)</span>
+researcher_url = os.environ.get(<span class="str">"RESEARCHER_AGENT_CARD_URL"</span>, <span class="str">"http://localhost:8001/a2a/agent/.well-known/agent-card.json"</span>)
 researcher = <span class="cls">RemoteA2aAgent</span>(
     name=<span class="str">"researcher"</span>,
-    agent_card_url=os.getenv(<span class="str">"RESEARCHER_AGENT_CARD_URL"</span>),
+    agent_card=researcher_url,
+    description=<span class="str">"Gathers information using Google Search."</span>,
+    <span class="cm"># IMPORTANT: Save the output to state for the Judge to see</span>
+    after_agent_callback=<span class="fn">create_save_output_callback</span>(<span class="str">"research_findings"</span>),
+    <span class="cm"># IMPORTANT: Use authenticated client for communication</span>
+    httpx_client=<span class="fn">create_authenticated_client</span>(researcher_url)
 )
 
+<span class="cm"># Connect to the Judge (Localhost port 8002)</span>
+judge_url = os.environ.get(<span class="str">"JUDGE_AGENT_CARD_URL"</span>, <span class="str">"http://localhost:8002/a2a/agent/.well-known/agent-card.json"</span>)
 judge = <span class="cls">RemoteA2aAgent</span>(
     name=<span class="str">"judge"</span>,
-    agent_card_url=os.getenv(<span class="str">"JUDGE_AGENT_CARD_URL"</span>),
+    agent_card=judge_url,
+    description=<span class="str">"Evaluates research."</span>,
+    after_agent_callback=<span class="fn">create_save_output_callback</span>(<span class="str">"judge_feedback"</span>),
+    httpx_client=<span class="fn">create_authenticated_client</span>(judge_url)
 )
 
+<span class="cm"># Content Builder (Localhost port 8003)</span>
+content_builder_url = os.environ.get(<span class="str">"CONTENT_BUILDER_AGENT_CARD_URL"</span>, <span class="str">"http://localhost:8003/a2a/agent/.well-known/agent-card.json"</span>)
 content_builder = <span class="cls">RemoteA2aAgent</span>(
     name=<span class="str">"content_builder"</span>,
-    agent_card_url=os.getenv(<span class="str">"BUILDER_AGENT_CARD_URL"</span>),
+    agent_card=content_builder_url,
+    description=<span class="str">"Builds the course."</span>,
+    httpx_client=<span class="fn">create_authenticated_client</span>(content_builder_url)
 )</code><button class="copy-btn" onclick="copyCode(this)">Copy</button></pre>
       <h2>The A2A Protocol</h2>
       <p>Each agent exposes an <strong>agent card</strong> — a JSON endpoint describing its capabilities. <code>RemoteA2aAgent</code> reads this card to discover how to communicate with the service.</p>
@@ -475,30 +517,33 @@ content_builder = <span class="cls">RemoteA2aAgent</span>(
     <div class="content">
       <p>The Escalation Checker is a custom <code>BaseAgent</code> that uses Python logic — not an LLM — to inspect the Judge's output and decide whether to continue the loop or break out.</p>
       <h2>Custom BaseAgent</h2>
-      <pre data-lang="python"><code><span class="kw">import</span> json
-<span class="kw">from</span> google.adk.agents <span class="kw">import</span> BaseAgent
-<span class="kw">from</span> google.adk.events <span class="kw">import</span> Event, EventActions
+      <p>In <code>agents/orchestrator/agent.py</code>, replace the Escalation Checker TODO with:</p>
+      <pre data-lang="python"><code><span class="cm"># --- Escalation Checker ---</span>
 
 <span class="kw">class</span> <span class="cls">EscalationChecker</span>(<span class="cls">BaseAgent</span>):
-    <span class="str">"""Checks Judge output; signals loop exit on 'pass'."""</span>
+    <span class="str">"""Checks the judge's feedback and escalates (breaks the loop) if it passed."""</span>
 
-    <span class="kw">async def</span> <span class="fn">_run_async_impl</span>(self, ctx):
-        last_msg = ctx.session.events[-<span class="num">1</span>].content
-        <span class="kw">try</span>:
-            result = json.loads(last_msg)
-            <span class="kw">if</span> result.get(<span class="str">"status"</span>) == <span class="str">"pass"</span>:
-                <span class="kw">yield</span> <span class="cls">Event</span>(
-                    author=self.name,
-                    actions=<span class="cls">EventActions</span>(escalate=<span class="kw">True</span>),
-                )
-            <span class="kw">else</span>:
-                feedback = result.get(<span class="str">"feedback"</span>, <span class="str">"Needs improvement."</span>)
-                <span class="kw">yield</span> <span class="cls">Event</span>(
-                    author=self.name,
-                    content=<span class="str">"Research failed. Feedback: "</span> + feedback,
-                )
-        <span class="kw">except</span> json.JSONDecodeError:
-            <span class="kw">yield</span> <span class="cls">Event</span>(author=self.name, content=<span class="str">"Parse error."</span>)
+    <span class="kw">async def</span> <span class="fn">_run_async_impl</span>(
+        self, ctx: <span class="cls">InvocationContext</span>
+    ) -&gt; <span class="cls">AsyncGenerator</span>[<span class="cls">Event</span>, <span class="kw">None</span>]:
+        <span class="cm"># Retrieve the feedback saved by the Judge</span>
+        feedback = ctx.session.state.get(<span class="str">"judge_feedback"</span>)
+        <span class="fn">print</span>(<span class="str">f"[EscalationChecker] Feedback: {feedback}"</span>)
+
+        <span class="cm"># Check for 'pass' status</span>
+        is_pass = <span class="kw">False</span>
+        <span class="kw">if</span> <span class="fn">isinstance</span>(feedback, dict) <span class="kw">and</span> feedback.get(<span class="str">"status"</span>) == <span class="str">"pass"</span>:
+            is_pass = <span class="kw">True</span>
+        <span class="cm"># Handle string fallback if JSON parsing failed</span>
+        <span class="kw">elif</span> <span class="fn">isinstance</span>(feedback, str) <span class="kw">and</span> <span class="str">'"status": "pass"'</span> <span class="kw">in</span> feedback:
+            is_pass = <span class="kw">True</span>
+
+        <span class="kw">if</span> is_pass:
+            <span class="cm"># 'escalate=True' tells the parent LoopAgent to stop looping</span>
+            <span class="kw">yield</span> <span class="cls">Event</span>(author=self.name, actions=<span class="cls">EventActions</span>(escalate=<span class="kw">True</span>))
+        <span class="kw">else</span>:
+            <span class="cm"># Continue the loop</span>
+            <span class="kw">yield</span> <span class="cls">Event</span>(author=self.name)
 
 escalation_checker = <span class="cls">EscalationChecker</span>(name=<span class="str">"escalation_checker"</span>)</code><button class="copy-btn" onclick="copyCode(this)">Copy</button></pre>
       <div class="callout tip"><span class="ci">&#128302;</span><div>Not every "agent" needs an LLM! For deterministic logic like parsing JSON, a custom <code>BaseAgent</code> is faster, cheaper, and more reliable than using a model.</div></div>
@@ -519,16 +564,14 @@ escalation_checker = <span class="cls">EscalationChecker</span>(name=<span class
     <div class="content">
       <p>Compose the <code>Researcher</code>, <code>Judge</code>, and <code>EscalationChecker</code> into a <code>LoopAgent</code> — a while-loop that retries until quality is approved.</p>
       <h2>Composing the Loop</h2>
-      <pre data-lang="python"><code><span class="kw">from</span> google.adk.agents <span class="kw">import</span> LoopAgent
+      <p>In <code>agents/orchestrator/agent.py</code>, replace the Research Loop TODO with:</p>
+      <pre data-lang="python"><code><span class="cm"># --- Orchestration ---</span>
 
 research_loop = <span class="cls">LoopAgent</span>(
     name=<span class="str">"research_loop"</span>,
-    sub_agents=[
-        researcher,          <span class="cm"># 1. Search the web</span>
-        judge,               <span class="cm"># 2. Evaluate quality</span>
-        escalation_checker,  <span class="cm"># 3. Check if we should stop</span>
-    ],
-    max_iterations=<span class="num">5</span>,  <span class="cm"># Safety limit</span>
+    description=<span class="str">"Iteratively researches and judges until quality standards are met."</span>,
+    sub_agents=[researcher, judge, escalation_checker],
+    max_iterations=<span class="num">3</span>,
 )</code><button class="copy-btn" onclick="copyCode(this)">Copy</button></pre>
       <h2>How the Loop Works</h2>
       <ol>
@@ -559,20 +602,13 @@ research_loop = <span class="cls">LoopAgent</span>(
     <div class="content">
       <p>Chain the <code>research_loop</code> and <code>content_builder</code> together using a <code>SequentialAgent</code>.</p>
       <h2>Assembling the Pipeline</h2>
-      <pre data-lang="python"><code><span class="kw">from</span> google.adk.agents <span class="kw">import</span> SequentialAgent
-
-course_pipeline = <span class="cls">SequentialAgent</span>(
-    name=<span class="str">"course_pipeline"</span>,
-    sub_agents=[
-        research_loop,    <span class="cm"># Phase 1: Research until quality passes</span>
-        content_builder,  <span class="cm"># Phase 2: Build the course</span>
-    ],
-)
-
-<span class="cm"># Root agent exposed by the Orchestrator service</span>
-root_agent = course_pipeline</code><button class="copy-btn" onclick="copyCode(this)">Copy</button></pre>
+      <pre data-lang="python"><code>root_agent = <span class="cls">SequentialAgent</span>(
+    name=<span class="str">"course_creation_pipeline"</span>,
+    description=<span class="str">"A pipeline that researches a topic and then builds a course from it."</span>,
+    sub_agents=[research_loop, content_builder],
+)</code><button class="copy-btn" onclick="copyCode(this)">Copy</button></pre>
       <h2>Agent Hierarchy</h2>
-      <pre><code>SequentialAgent (course_pipeline)
+      <pre><code>SequentialAgent (course_creation_pipeline)
 ├── LoopAgent (research_loop)         [runs until pass]
 │   ├── RemoteA2aAgent (researcher)   → port 8001
 │   ├── RemoteA2aAgent (judge)        → port 8002
@@ -596,21 +632,58 @@ root_agent = course_pipeline</code><button class="copy-btn" onclick="copyCode(th
     <div class="content">
       <p>The <code>run_local.sh</code> script starts all four agents as separate uvicorn processes, simulating the distributed production deployment on your local machine.</p>
       <h2>Starting All Services</h2>
-      <pre data-lang="bash"><code><span class="fn">chmod</span> +x run_local.sh
-<span class="fn">./run_local.sh</span></code><button class="copy-btn" onclick="copyCode(this)">Copy</button></pre>
+      <pre data-lang="bash"><code><span class="fn">./run_local.sh</span></code><button class="copy-btn" onclick="copyCode(this)">Copy</button></pre>
       <table>
-        <thead><tr><th>Agent</th><th>Port</th><th>Command</th></tr></thead>
+        <thead><tr><th>Agent</th><th>Port</th><th>Agent Card URL</th></tr></thead>
         <tbody>
-          <tr><td>Researcher</td><td>8001</td><td><code>uvicorn researcher.main:app</code></td></tr>
-          <tr><td>Judge</td><td>8002</td><td><code>uvicorn judge.main:app</code></td></tr>
-          <tr><td>Content Builder</td><td>8003</td><td><code>uvicorn builder.main:app</code></td></tr>
-          <tr><td>Orchestrator</td><td>8004</td><td><code>uvicorn orchestrator.main:app</code></td></tr>
+          <tr><td>Researcher</td><td>8001</td><td><code>http://localhost:8001/a2a/agent/.well-known/agent-card.json</code></td></tr>
+          <tr><td>Judge</td><td>8002</td><td><code>http://localhost:8002/a2a/agent/.well-known/agent-card.json</code></td></tr>
+          <tr><td>Content Builder</td><td>8003</td><td><code>http://localhost:8003/a2a/agent/.well-known/agent-card.json</code></td></tr>
+          <tr><td>Orchestrator</td><td>8004</td><td><code>http://localhost:8004/a2a/agent/.well-known/agent-card.json</code></td></tr>
         </tbody>
       </table>
-      <h2>Testing the Full Pipeline</h2>
-      <pre data-lang="bash"><code><span class="fn">curl</span> -X POST http://localhost:8004/run \
-  -H <span class="str">"Content-Type: application/json"</span> \
-  -d <span class="str">'{"message": "Create a course on Introduction to Kubernetes"}'</span></code><button class="copy-btn" onclick="copyCode(this)">Copy</button></pre>
+      <h2>Check an Agent Card</h2>
+      <pre data-lang="bash"><code><span class="fn">curl</span> http://localhost:8001/a2a/agent/.well-known/agent-card.json</code><button class="copy-btn" onclick="copyCode(this)">Copy</button></pre>
+      <h2>Query the Researcher</h2>
+      <pre data-lang="bash"><code><span class="fn">curl</span> -X POST http://localhost:8001/a2a/agent \
+      -H <span class="str">"Content-Type: application/json"</span> \
+      -d <span class="str">'{
+        "jsonrpc": "2.0",
+        "method": "message/send",
+        "id": 1,
+        "params": {
+          "message": {
+            "message_id": "test-1",
+            "role": "user",
+            "parts": [
+              {
+                "text": "What is the capital of France?",
+                "kind": "text"
+              }
+            ]
+          }
+        }
+      }'</span></code><button class="copy-btn" onclick="copyCode(this)">Copy</button></pre>
+      <h2>Query the Judge</h2>
+      <pre data-lang="bash"><code><span class="fn">curl</span> -X POST http://localhost:8002/a2a/agent \
+      -H <span class="str">"Content-Type: application/json"</span> \
+      -d <span class="str">'{
+        "jsonrpc": "2.0",
+        "method": "message/send",
+        "id": 1,
+        "params": {
+          "message": {
+            "message_id": "test-2",
+            "role": "user",
+            "parts": [
+              {
+                "text": "Topic: Tokyo. Findings: Tokyo is the capital of Japan.",
+                "kind": "text"
+              }
+            ]
+          }
+        }
+      }'</span></code><button class="copy-btn" onclick="copyCode(this)">Copy</button></pre>
       <div class="callout info"><span class="ci">&#128161;</span><div>Watch the terminal output to see each agent executing in sequence. The loop may run 2–3 times before the Judge passes the research.</div></div>
     </div>
     <div class="step-foot">
@@ -627,35 +700,61 @@ root_agent = course_pipeline</code><button class="copy-btn" onclick="copyCode(th
       <div class="step-dur">15 minutes</div>
     </div>
     <div class="content">
-      <p>Deploy each agent as an independent Cloud Run service. Sub-agents deploy first, then the Orchestrator receives their URLs as environment variables.</p>
-      <h2>Step 1: Deploy Sub-Agents (in parallel)</h2>
+      <p>Deploy each agent as an independent Cloud Run service. Sub-agents deploy first, then the Orchestrator receives their URLs as environment variables, and finally the frontend app.</p>
+      <h2>Step 1: Deploy the Researcher</h2>
       <pre data-lang="bash"><code><span class="fn">gcloud</span> run deploy researcher \
-  --source researcher/ --region us-central1 --allow-unauthenticated &amp;
+      --source agents/researcher/ \
+      --region us-west1 \
+      --allow-unauthenticated \
+      --labels dev-tutorial=prod-ready-1 \
+      --set-env-vars GOOGLE_CLOUD_PROJECT=$GOOGLE_CLOUD_PROJECT \
+      --set-env-vars GOOGLE_GENAI_USE_VERTEXAI=<span class="str">"true"</span></code><button class="copy-btn" onclick="copyCode(this)">Copy</button></pre>
+      <h2>Step 2: Deploy the Judge</h2>
+      <pre data-lang="bash"><code><span class="fn">gcloud</span> run deploy judge \
+      --source agents/judge/ \
+      --region us-west1 \
+      --allow-unauthenticated \
+      --labels dev-tutorial=prod-ready-1 \
+      --set-env-vars GOOGLE_CLOUD_PROJECT=$GOOGLE_CLOUD_PROJECT \
+      --set-env-vars GOOGLE_GENAI_USE_VERTEXAI=<span class="str">"true"</span></code><button class="copy-btn" onclick="copyCode(this)">Copy</button></pre>
+      <h2>Step 3: Deploy the Content Builder</h2>
+      <pre data-lang="bash"><code><span class="fn">gcloud</span> run deploy content-builder \
+      --source agents/content_builder/ \
+      --region us-west1 \
+      --allow-unauthenticated \
+      --labels dev-tutorial=prod-ready-1 \
+      --set-env-vars GOOGLE_CLOUD_PROJECT=$GOOGLE_CLOUD_PROJECT \
+      --set-env-vars GOOGLE_GENAI_USE_VERTEXAI=<span class="str">"true"</span></code><button class="copy-btn" onclick="copyCode(this)">Copy</button></pre>
+      <h2>Step 4: Capture Service URLs</h2>
+      <pre data-lang="bash"><code>RESEARCHER_URL=$(<span class="fn">gcloud</span> run services describe researcher --region us-west1 --format=<span class="str">'value(status.url)'</span>)
+JUDGE_URL=$(<span class="fn">gcloud</span> run services describe judge --region us-west1 --format=<span class="str">'value(status.url)'</span>)
+CONTENT_BUILDER_URL=$(<span class="fn">gcloud</span> run services describe content-builder --region us-west1 --format=<span class="str">'value(status.url)'</span>)
 
-<span class="fn">gcloud</span> run deploy judge \
-  --source judge/ --region us-central1 --allow-unauthenticated &amp;
-
-<span class="fn">gcloud</span> run deploy content-builder \
-  --source builder/ --region us-central1 --allow-unauthenticated &amp;
-
-<span class="fn">wait</span>  <span class="cm"># Wait for all three to complete</span></code><button class="copy-btn" onclick="copyCode(this)">Copy</button></pre>
-      <h2>Step 2: Capture Service URLs</h2>
-      <pre data-lang="bash"><code>RESEARCHER_URL=$(<span class="fn">gcloud</span> run services describe researcher \
-  --region us-central1 --format <span class="str">'value(status.url)'</span>)
-
-JUDGE_URL=$(<span class="fn">gcloud</span> run services describe judge \
-  --region us-central1 --format <span class="str">'value(status.url)'</span>)
-
-BUILDER_URL=$(<span class="fn">gcloud</span> run services describe content-builder \
-  --region us-central1 --format <span class="str">'value(status.url)'</span>)</code><button class="copy-btn" onclick="copyCode(this)">Copy</button></pre>
-      <h2>Step 3: Deploy Orchestrator</h2>
+<span class="fn">echo</span> <span class="str">"Researcher: $RESEARCHER_URL"</span>
+<span class="fn">echo</span> <span class="str">"Judge: $JUDGE_URL"</span>
+<span class="fn">echo</span> <span class="str">"Content Builder: $CONTENT_BUILDER_URL"</span></code><button class="copy-btn" onclick="copyCode(this)">Copy</button></pre>
+      <h2>Step 5: Deploy the Orchestrator</h2>
       <pre data-lang="bash"><code><span class="fn">gcloud</span> run deploy orchestrator \
-  --source orchestrator/ \
-  --region us-central1 \
-  --allow-unauthenticated \
-  --set-env-vars <span class="str">"RESEARCHER_AGENT_CARD_URL=${RESEARCHER_URL}/agent-card"</span> \
-  --set-env-vars <span class="str">"JUDGE_AGENT_CARD_URL=${JUDGE_URL}/agent-card"</span> \
-  --set-env-vars <span class="str">"BUILDER_AGENT_CARD_URL=${BUILDER_URL}/agent-card"</span></code><button class="copy-btn" onclick="copyCode(this)">Copy</button></pre>
+      --source agents/orchestrator/ \
+      --region us-west1 \
+      --allow-unauthenticated \
+      --labels dev-tutorial=prod-ready-1 \
+      --set-env-vars RESEARCHER_AGENT_CARD_URL=$RESEARCHER_URL/a2a/agent/.well-known/agent-card.json \
+      --set-env-vars JUDGE_AGENT_CARD_URL=$JUDGE_URL/a2a/agent/.well-known/agent-card.json \
+      --set-env-vars CONTENT_BUILDER_AGENT_CARD_URL=$CONTENT_BUILDER_URL/a2a/agent/.well-known/agent-card.json \
+      --set-env-vars GOOGLE_CLOUD_PROJECT=$GOOGLE_CLOUD_PROJECT \
+      --set-env-vars GOOGLE_GENAI_USE_VERTEXAI=<span class="str">"true"</span></code><button class="copy-btn" onclick="copyCode(this)">Copy</button></pre>
+      <h2>Step 6: Capture the Orchestrator URL</h2>
+      <pre data-lang="bash"><code>ORCHESTRATOR_URL=$(<span class="fn">gcloud</span> run services describe orchestrator --region us-west1 --format=<span class="str">'value(status.url)'</span>)
+<span class="fn">echo</span> $ORCHESTRATOR_URL</code><button class="copy-btn" onclick="copyCode(this)">Copy</button></pre>
+      <h2>Step 7: Deploy the Frontend</h2>
+      <pre data-lang="bash"><code><span class="fn">gcloud</span> run deploy course-creator \
+        --source app \
+        --region us-west1 \
+        --allow-unauthenticated \
+        --labels dev-tutorial=prod-ready-1 \
+        --set-env-vars AGENT_SERVER_URL=$ORCHESTRATOR_URL \
+        --set-env-vars GOOGLE_CLOUD_PROJECT=$GOOGLE_CLOUD_PROJECT</code><button class="copy-btn" onclick="copyCode(this)">Copy</button></pre>
       <div class="callout warning"><span class="ci">&#9888;</span><div>For production, remove <code>--allow-unauthenticated</code> and configure IAM service accounts for inter-service authentication.</div></div>
     </div>
     <div class="step-foot">
